@@ -1,0 +1,95 @@
+<template>
+  <ul class="pull-left header-menu">
+    <template v-for="item in menuData">
+      <li @click="selectMenu(item, 1)"  :key="item.id" :class="{selected: item.selected}" v-if="!item.hidden">
+        <Icon :type="item.meta.icon"></Icon>
+        <span>{{item.meta.title}}</span>
+      </li>
+    </template>
+  </ul>
+</template>
+<script>
+export default {
+  data () {
+    return {}
+  },
+  watch: {
+    firstPath () {
+      // 左侧菜单刷新不用重置菜单数据
+      if (this.$route.name !== 'Redirect') this.initMenu()
+    }
+  },
+  computed: {
+    firstPath: function () {
+      return `/${this.$route.path.split('/')[1]}`
+    },
+    menuData () {
+      return this.$store.state.permission.addRoutes
+    }
+  },
+  created () {
+    this.initMenu()
+  },
+  methods: {
+    getJumpRoute (data) {
+      const route = data[0]
+      if (route.children) {
+        return this.getJumpRoute(route.children)
+      }
+      return route.path
+    },
+    selectMenu (item, flag) {
+      if (item.selected) return
+      this.menuData.forEach((row) => {
+        this.$set(row, 'selected', false)
+        if (item.id === row.id) {
+          row.selected = true
+          this.$store.commit('SETTING_SIDE_MENU', row.children)
+          this.$store.commit('SETTING_BASE_PATH', row.path)
+          // 点击一级菜单时跳转界面，刷新界面是保持不动
+          if (flag) this.$router.push({ path: this.getJumpRoute(row.children) })
+        }
+      })
+    },
+    initMenu () {
+      // 没有任何菜单信息时直接return
+      if (this.menuData.length === 1) return;
+      let selectMenu
+      this.menuData.forEach((item) => {
+        if (item.path === this.firstPath) selectMenu = item
+      })
+      this.selectMenu(selectMenu || this.menuData[0], this.$route.name === 'Home')
+    }
+  }
+}
+</script>
+<style lang="scss">
+  ul.header-menu {
+    margin: 0;
+    list-style: none;
+    li {
+      font-size: 14px;
+      position: relative;
+      height: 48px;
+      cursor: pointer;
+      white-space: nowrap;
+      padding: 0 20px;
+      float: left;
+      .iconfont {
+        font-size: 14px;
+      }
+      &.selected {
+        color: #2d8cf0;
+        border-bottom: 2px solid #2d8cf0;
+      }
+      div {
+        display: none;
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+</style>
